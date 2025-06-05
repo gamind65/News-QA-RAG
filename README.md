@@ -32,9 +32,10 @@ With this experiment, i have successfully implemented RAG for Qwen3-1.7b and hav
 Although, my LLM does not have memory of previous question. 
 
 This will be my future improvement for this project.
-Thats it for now. 
+
 
 ---
+Thats it for now. 
 Peace!
 
 
