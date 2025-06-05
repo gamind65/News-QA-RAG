@@ -7,7 +7,9 @@ This is to support my project **Semi-automatic Scalable Method on Contructing Ne
 ## 2.Experimentaion result
 After the experimentation, I have successfully implemented `RAG` for `Qwen3-1.7b` with great result.  
   
-This model shows it can answer question with **great information accuracy**. It also overcome **false assertion question** while `Gemma3-1b` assume the false assertion information is true and try to explain it. This mean, this LLM `Qwen3-1b` despite small in size but have **great accuracy and low hallucination rate** *(see News Article QnA in Notebook)*  
+This model shows it can answer question with **great information accuracy**. It also overcome **false assertion question** while `Gemma3-1b` assume the false assertion information is true and try to explain it.   
+  
+This mean, this LLM `Qwen3-1b` despite small in size but have **great accuracy and low hallucination rate** *(see News Article QnA in Notebook)*  
   
 ## 3. Demo
 I have also created a demo with Streamlit to demonstrate how good this method is.  
