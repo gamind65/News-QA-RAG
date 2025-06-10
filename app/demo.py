@@ -7,27 +7,37 @@ from langchain_community.vectorstores import FAISS
 from langchain_ollama.chat_models import ChatOllama
 from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
-import pandas as pd
 import re
 import streamlit as st
+import os
 
 #---------------------
 # set up streamlit interface layout
 st.set_page_config(layout="wide")
+
+# Ollama base URL (points to Docker container)
+base_url="http://ollama-container:11434"
+ollama_client = ollama.Client(host=base_url)
 
 #---------------------
 # Load cache data
 @st.cache_resource()
 def load_cache_resource(llm_name="qwen3:1.7b", embed_name="nomic-embed-text"):
     # Load LLM
+    ollama_client.pull(model=llm_name)
+    ollama_client.pull(model=embed_name)
+
     llm = ChatOllama(model=llm_name, 
-                        enable_thinking=True, 
-                        Temperature=0.6, 
-                        TopP=0.95, TopK=20, 
-                        MinP=0) 
+                     base_url=base_url,
+                     enable_thinking=True, 
+                     Temperature=0.6, 
+                     TopP=0.95, 
+                     TopK=20, 
+                     MinP=0) # Hit setting as best practice listed on Qwen3 HuggingFace 
     
     # Load embedding model
-    embeddings = OllamaEmbeddings(model=embed_name)
+    embeddings = OllamaEmbeddings(model=embed_name,
+                                  base_url=base_url)
     return llm, embeddings
 
 llm, embeddings = load_cache_resource()
@@ -114,7 +124,6 @@ def main():
         st.subheader("Chatbot section")
 
         
-    
     article = None
     with col1:
         # Textbox for article content

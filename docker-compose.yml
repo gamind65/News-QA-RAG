@@ -1,0 +1,32 @@
+version: "3.9"
+services: 
+  ollama-container:
+    image: ollama/ollama
+    volumes: 
+      - ollama_models:/root/.ollama/models
+    ports:
+      - 11434:11434
+    networks:
+      - chatbot-net
+    restart: unless-stopped
+
+  streamlit-app: 
+    image: python:3.10-slim
+    ports:
+      - 8501:8501
+    networks:
+      - chatbot-net
+    volumes:
+      - ./app:/app
+      - python_deps:/root/.cache/pip
+    working_dir: /app
+    command: bash -c "pip install --upgrade pip && pip install -r requirements.txt && streamlit run demo.py"
+    restart: unless-stopped
+
+volumes:
+  ollama_models: {}
+  python_deps: {}
+
+networks:
+  chatbot-net:
+    driver: bridge
