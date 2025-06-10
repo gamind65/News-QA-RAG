@@ -1,4 +1,4 @@
-# News-QA-RAG
+# News-QA-RAG Chatbot (now comes with Docker compose)
 ## 1. Introduction
 This repository is my experiment on applying RAG technique on different small scale LLM *(under 2B params)* to perform **QnA task for news article**.  
     
