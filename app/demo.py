@@ -7,17 +7,27 @@ from langchain_community.vectorstores import FAISS
 from langchain_ollama.chat_models import ChatOllama
 from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
+from langchain_google_genai import ChatGoogleGenerativeAI
 import re
 import streamlit as st
 import os
+import json
+import getpass
 
 #---------------------
-# set up streamlit interface layout
+# Set up streamlit interface layout
 st.set_page_config(layout="wide")
 
 # Ollama base URL (points to Docker container)
 base_url="http://ollama-container:11434"
 ollama_client = ollama.Client(host=base_url)
+
+# Load Gemini Key in JSON file
+with open("key.json") as f:
+    key = json.load(f)
+
+if "GOOGLE_API_KEY" not in os.environ:
+    os.environ["GOOGLE_API_KEY"] = key["gemini_key"]
 
 #---------------------
 # Load cache data
@@ -37,10 +47,20 @@ def load_cache_resource(llm_name="qwen3:1.7b", embed_name="nomic-embed-text"):
     
     # Load embedding model
     embeddings = OllamaEmbeddings(model=embed_name,
-                                  base_url=base_url)
-    return llm, embeddings
+                                  base_url=base_url
+                                  )
+    
+    llm_gemini = ChatGoogleGenerativeAI(
+        model="gemini-2.0-flash",
+        temperature=0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=2
+        )
 
-llm, embeddings = load_cache_resource()
+    return llm, llm_gemini, embeddings
+
+llm, llm_gemini, embeddings = load_cache_resource()
 
 #---------------------
 # Load resource to initialize compoments
@@ -74,12 +94,9 @@ def data_chunking(article, size=512, overlap=0):
     return chunks
 
 # Add created chunks into vector database 
-def create_vectordb(text_chunks):
+def create_vectordb(text_chunks, embeddings):
     vectordb = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
     return vectordb
-
-def news_qa(question):
-    return 
 
 # Set up retriever
 def retriever(llm, vector_db, QUERY_PROMPT):
@@ -91,22 +108,41 @@ def retriever(llm, vector_db, QUERY_PROMPT):
     return retriever_agent
 
 # Data processing and generate answer
-def generate_ans(article, question):
-    chunks = data_chunking(article)                     # Create chunks  
-    vector_db = create_vectordb(chunks)                 # Create vector database for embedded chunks
-    retriever_agent = retriever(llm, vector_db, QUERY_PROMPT) # Create retriever
-    prompt = ChatPromptTemplate.from_template(template) # Create prompt template
+def generate_ans(article, question, llm_choice):
+    chunks = data_chunking(article)                                     # Create chunks
+    prompt = ChatPromptTemplate.from_template(template)                 # Create prompt template
+    vector_db = create_vectordb(chunks, embeddings)                     # Create vector database for embedded chunks
+    
+    if llm_choice == "Gemini-2.0-flash":
+        # Create retriever
+        retriever_gemini = retriever(llm_gemini, vector_db, QUERY_PROMPT)   
+        
+        # Create chain
+        chain = (
+            {"context": retriever_gemini, "question": RunnablePassthrough()}
+            | prompt
+            | llm_gemini
+            | StrOutputParser()
+        )
 
-    # Create chain
-    chain = (
-        {"context": retriever_agent, "question": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+        # Generate answer
+        ans = chain.invoke(question)
 
-    # Generate answer
-    ans = re.sub('<think>(?s:.)*?</think>', '', chain.invoke(question))
+    else:
+        # Create retriever
+        retriever_agent = retriever(llm, vector_db, QUERY_PROMPT)   
+
+        # Create chain
+        chain = (
+            {"context": retriever_agent, "question": RunnablePassthrough()}
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
+
+        # Generate answer
+        ans = re.sub('<think>(?s:.)*?</think>', '', chain.invoke(question))
+
     return ans
 
 #---------------------
@@ -127,6 +163,10 @@ def main():
     article = None
     with col1:
         # Textbox for article content
+        llm_choice = st.selectbox(label="Choose what model you want to use:",
+                     options=("Gemini-2.0-flash", "Qwen3-1.7b"))
+        st.write("You selected:", llm_choice)
+
         article = st.text_input("Article content", None, placeholder="Paste your news article content here...")
         if article is not None:
             st.write("Your article content:")
@@ -162,7 +202,7 @@ def main():
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
             else:
-                response = generate_ans(article, query)
+                response = generate_ans(article, query, llm_choice)
                 # Display assistant response in chat message container
                 with container:
                     with st.chat_message("assistant"):
