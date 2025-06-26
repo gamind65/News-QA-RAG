@@ -1,4 +1,4 @@
-# News-QA-RAG
+# News-QA-RAG Chatbot (now comes with Docker compose)
 ## 1. Introduction
 This repository is my experiment on applying RAG technique on different small scale LLM *(under 2B params)* to perform **QnA task for news article**.  
     
@@ -19,7 +19,7 @@ I have also created a demo with Streamlit to demonstrate how good this method is
 Setup: 
 ```Python 3.10
 git clone https://github.com/gamind65/News-QA-RAG.git
-cd News-QA-RAG/
+cd News-QA-RAG/app/
 pip install --upgrade pip -q
 pip3 install -r requirements.txt
 curl -fsSL --no-progress-meter https://ollama.com/install.sh | sh
@@ -28,12 +28,22 @@ ollama pull qwen3:1.7b
 streamlit run demo.py
 ```
   
+or use Docker-compose  
+```
+git clone https://github.com/gamind65/News-QA-RAG.git
+cd News-QA-RAG/
+docker-compose up 
+```
+  
 ## 4. Further improvement
 With this experiment, i have successfully implemented RAG for Qwen3-1.7b and have great result.  
   
 Although, my LLM does not have memory of previous question.   
   
 This will be my future improvement for this project.  
+
+## 5. AWS EC2 deploymenyt now available!!!
+You can check it out at `http://16.176.12.112:8501/`  
   
   
 ---
